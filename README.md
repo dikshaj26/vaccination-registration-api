@@ -476,14 +476,3 @@ try {
     ```
 
 ---
-
-## 9. Key Interview Questions & Answers
-
-### 1. How did you prevent slot overbooking under heavy concurrent load?
-We prevented race conditions by using **atomic conditional updates** directly in the database (`Slot.findOneAndUpdate` checking `bookedCount: { $lt: 10 }` and incrementing). This ensures Mongoose executes the operation as a single isolated command, rather than doing a separate find, check, and save, which would lead to dirty reads and overbooking.
-
-### 2. Why are MongoDB Transactions necessary when changing user slots?
-Because a slot modification involves multiple writes across different documents (releasing capacity on the old slot, securing capacity on the new slot, and updating the booking record). If the old slot is decremented but the new slot fails because it filled up, the database remains in an inconsistent state. A transaction guarantees that either **all** operations succeed, or they **all** roll back to preserve data integrity.
-
-### 3. How does the system handle "automatic vaccination completion" without cron jobs?
-We built **dynamic status evaluations** triggered upon key queries. Whenever a user views their bookings, checks their status, or attempts to make a booking (and when the admin pulls reports), the backend runs a helper that compares the current time with the slot ending times. If the slot has passed, it automatically marks the booking status as `COMPLETED` and recalculates the user's overall status (`FIRST_DOSE_COMPLETED` or `ALL_COMPLETED`) in real time.
