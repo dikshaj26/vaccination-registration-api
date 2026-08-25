@@ -14,6 +14,7 @@ const protect = async (req, res, next) => {
 
       // Verify the token signature and expiration
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('DEBUG AUTH MIDDLEWARE - Decoded Token:', decoded);
 
       // Fetch the authenticated user/admin details from MongoDB based on token payload
       if (decoded.role === 'admin') {
@@ -27,10 +28,12 @@ const protect = async (req, res, next) => {
         if (!user) {
           return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
         }
-        req.user = user; // Attach full user document (without password)
+        req.user = user.toObject(); // Convert to standard JS object to safely attach transient fields
+        req.user.id = user._id;
         req.user.role = 'user'; // Explicitly set role
       }
 
+      console.log('DEBUG AUTH MIDDLEWARE - req.user.role:', req.user.role);
       return next(); // Proceed to next controller/middleware
     } catch (error) {
       console.error('Token authentication error:', error.message);
